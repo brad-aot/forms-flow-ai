@@ -25,6 +25,7 @@ const setKeycloakJson = (tenantKey = null, ...rest) => {
   const done = rest.length ? rest[0] : () => {};
   kcJson = getTenantKeycloakJson(tenantKey);
   KeycloakData = new Keycloak(kcJson);
+  console.log("[KCDEBUG] kcJson", kcJson);
   doLogin = KeycloakData?.login;
   doLogout = KeycloakData?.logout;
   done(kcJson.clientId);
@@ -46,7 +47,7 @@ const initKeycloak = (store, ...rest) => {
     realm: KeycloakData?.realm,
   });
   KeycloakData.init({
-    onLoad: "login-required",
+    onLoad: "check-sso",
     // promiseType: "native",
     silentCheckSsoRedirectUri:
       window.location.origin + "/silent-check-sso.html",
