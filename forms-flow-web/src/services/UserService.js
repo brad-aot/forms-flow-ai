@@ -40,6 +40,11 @@ const setKeycloakJson = (tenantKey = null, ...rest) => {
 const initKeycloak = (store, ...rest) => {
   const clientId = rest.length && rest[0];
   const done = rest.length ? rest[1] : () => {};
+  console.log("[KCDEBUG] initKeycloak starting", {
+    clientId,
+    keycloakUrl: KeycloakData?.authServerUrl,
+    realm: KeycloakData?.realm,
+  });
   KeycloakData.init({
     onLoad: "check-sso",
     promiseType: "native",
@@ -48,25 +53,44 @@ const initKeycloak = (store, ...rest) => {
     pkceMethod: "S256",
     checkLoginIframe: false,
   }).then((authenticated) => {
+    console.log("[KCDEBUG] init resolved", {
+      authenticated,
+      hasToken: Boolean(KeycloakData.token),
+      tokenParsed: KeycloakData.tokenParsed,
+      resourceAccess: KeycloakData.resourceAccess,
+    });
     if (authenticated) {
       if (KeycloakData.resourceAccess[clientId]) {
         const UserRoles = KeycloakData.resourceAccess[clientId].roles;
+        console.log("[KCDEBUG] roles found", UserRoles);
         store.dispatch(setUserRole(UserRoles));
         store.dispatch(setUserToken(KeycloakData.token));
         store.dispatch(setLanguage(KeycloakData.tokenParsed.locale || "en"));
         //Set Cammunda/Formio Base URL
         setApiBaseUrlToLocalStorage();
+        console.log("[KCDEBUG] local storage base URLs set", {
+          bpmApiUrl: localStorage.getItem("bpmApiUrl"),
+          formioApiUrl: localStorage.getItem("formioApiUrl"),
+          formsflowApiUrl: localStorage.getItem("formsflow.ai.api.url"),
+        });
         // get formio roles
+        console.log("[KCDEBUG] calling getFormioRoleIds");
         store.dispatch(
           getFormioRoleIds((err) => {
+            console.log("[KCDEBUG] getFormioRoleIds callback", { err });
             if (err) {
-              console.error(err);
+              console.error("[KCDEBUG] getFormioRoleIds failed", err);
               // doLogout();
             } else {
-              KeycloakData.loadUserInfo().then((res) =>
-                store.dispatch(setUserDetails(res))
-              );
+              console.log("[KCDEBUG] calling loadUserInfo");
+              KeycloakData.loadUserInfo().then((res) => {
+                console.log("[KCDEBUG] loadUserInfo response", res);
+                store.dispatch(setUserDetails(res));
+              }).catch((err) => {
+                console.error("[KCDEBUG] loadUserInfo failed", err);
+              });
               // onAuthenticatedCallback();
+              console.log("[KCDEBUG] auth bootstrap complete");
               done(null, KeycloakData);
             }
           })
@@ -74,12 +98,19 @@ const initKeycloak = (store, ...rest) => {
 
         refreshToken(store);
       } else {
+        console.warn("[KCDEBUG] no resourceAccess entry for client; logging out", {
+          clientId,
+          resourceAccess: KeycloakData.resourceAccess,
+          tokenParsed: KeycloakData.tokenParsed,
+        });
         doLogout();
       }
     } else {
-      console.warn("not authenticated!");
+      console.warn("[KCDEBUG] not authenticated; calling login");
       doLogin();
     }
+  }).catch((err) => {
+    console.error("[KCDEBUG] Keycloak init failed", err);
   });
 };
 

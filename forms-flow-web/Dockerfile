@@ -68,9 +68,15 @@ RUN npm install --unsafe-perm --production
 COPY . /forms-flow-web/app/
 RUN npm run build
 
-FROM nginx:1.22 as production-stage
+# FROM nginx:1.22 as production-stage
+# RUN mkdir /app
+# COPY --from=build-stage /forms-flow-web/app/build /usr/share/nginx/html
+# COPY nginx.conf /etc/nginx/nginx.conf
+# EXPOSE 8080:8080
+# CMD ["nginx", "-g", "daemon off;"]
+FROM artifacts.developer.gov.bc.ca/docker-remote/nginx:1.17 as production-stage
 RUN mkdir /app
-COPY --from=build-stage /forms-flow-web/app/build /usr/share/nginx/html
+COPY --from=build-stage /app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf
 EXPOSE 8080:8080
 CMD ["nginx", "-g", "daemon off;"]
