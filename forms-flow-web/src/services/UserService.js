@@ -46,8 +46,8 @@ const initKeycloak = (store, ...rest) => {
     realm: KeycloakData?.realm,
   });
   KeycloakData.init({
-    onLoad: "check-sso",
-    promiseType: "native",
+    onLoad: "login-required",
+    // promiseType: "native",
     silentCheckSsoRedirectUri:
       window.location.origin + "/silent-check-sso.html",
     pkceMethod: "S256",
